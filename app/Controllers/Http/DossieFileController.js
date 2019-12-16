@@ -16,25 +16,30 @@ class DossieFileController {
   async uploadDossie({ request, auth, response }) {
 
     const dossieFile = request.file('dossie', {
-      size: '10mb'
+      size: '25mb'
     })
 
     //const path = process.env.DOSSIE_PATH + `${auth.user.ar}/${auth.user.cpf}`
     const path = Helpers.publicPath(`${auth.user.ar}/${auth.user.cpf}`)
 
     const data = request.only(['dossieName', 'consulta_cpf',
-      'consulta_cnpj', 'consulta_cei', 'consulta_docto', 'contrato', 'certidao', 'titulo', 'tipo_dossie'])
+      'consulta_cnpj', 'consulta_cei', 'consulta_docto', 'contrato', 'certidao', 'titulo', 'tipo_dossie', 'isrg'])
 
-    await dossieFile.move(path, {
-      name: `${Date.now()}-${dossieFile.clientName}`,
-    })
+    if (dossieFile) {
+      await dossieFile.move(path, {
+        name: `${Date.now()}-${dossieFile.clientName}`,
+      })
 
-    if (!dossieFile.moved()) {
-      return dossieFile.error()
+      if (!dossieFile.moved()) {
+        return dossieFile.error()
+      }
     }
 
-
-    const dossie = await Dossie.create({ user_id: auth.user.id, dossiePath: dossieFile.fileName, ...data })
+    const dossie = await Dossie.create({
+      user_id: auth.user.id,
+      dossiePath: dossieFile ? dossieFile.fileName : 'padrao',
+      ...data
+    })
     console.log(dossie);
 
     return response.status(200).send('Upload realizado com sucesso.')
@@ -69,14 +74,14 @@ class DossieFileController {
    * @param {View} ctx.view
    */
   async downloadDossie({ auth, response, request }) {
-    
+
     const dossie = request.only(['dossiePath'])
     console.log(dossie.dossiePath);
-    
+
     const download = await response.attachment(Helpers.publicPath(`${auth.user.ar}/${auth.user.cpf}/${dossie.dossiePath}`))
     //return download
 
-   
+
   }
 
   /**
